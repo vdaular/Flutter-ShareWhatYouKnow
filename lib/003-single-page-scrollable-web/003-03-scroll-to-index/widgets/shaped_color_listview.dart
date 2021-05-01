@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -64,10 +66,10 @@ class _ShapedColorListState extends State<ShapedColorList> {
   }
 
   void _scrollTo(String value) {
-    int index = _findIndexFromColorCode(value);
+    int selectedColorIndex = _findIndexFromColorCode(value);
     _itemScrollController.scrollTo(
-      index: index,
-      duration: Duration(seconds: 2),
+      index: selectedColorIndex,
+      duration: Duration(milliseconds: max(500, selectedColorIndex * 100)),
       curve: Curves.easeInOutCubic,
     );
   }

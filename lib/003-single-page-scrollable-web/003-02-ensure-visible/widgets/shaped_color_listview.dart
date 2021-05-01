@@ -3,9 +3,8 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ulusoyapps_flutter/002-navigator-2/entity/shape_border_type.dart';
+import 'package:ulusoyapps_flutter/003-single-page-scrollable-web/003-02-ensure-visible/widgets/shape_border_gridview.dart';
 import 'package:ulusoyapps_flutter/extensions/color_extensions.dart';
-
-import 'shape_border_listview.dart';
 
 class ShapedColorList extends StatefulWidget {
   final List<Color> colors;
@@ -28,21 +27,20 @@ class ShapedColorList extends StatefulWidget {
 class _ShapedColorListState extends State<ShapedColorList> {
   ScrollController _scrollController;
 
-  double itemHeight = 0;
-
   int get selectedColorCodeIndex {
     int index = widget.colors.indexWhere((element) => element.toHex() == widget.selectedColorCode.value);
     return index > -1 ? index : 0;
   }
 
+  List<GlobalKey> keys;
+
   @override
   void initState() {
+    keys = [for (int i = 0; i < widget.colors.length; i++) GlobalKey()];
     _scrollController = ScrollController(initialScrollOffset: widget.scrollPosition.value);
-
     _scrollController.addListener(() {
       widget.scrollPosition.value = _scrollController.position.pixels;
     });
-
     widget.selectedColorCode.addListener(() {
       if (_scrollController.hasClients) {
         _scrollToSelectedColor();
@@ -54,51 +52,47 @@ class _ShapedColorListState extends State<ShapedColorList> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final minItemHeight = 700.0;
-        itemHeight = max(constraints.maxHeight, minItemHeight);
-        return ListView.builder(
-          controller: _scrollController,
-          itemCount: widget.colors.length,
-          itemBuilder: (BuildContext context, int index) {
-            final color = widget.colors[index];
-            return ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: max(constraints.maxHeight, minItemHeight),
-                minHeight: minItemHeight,
-                minWidth: 600,
-              ),
-              child: _section(color, context),
-            );
-          },
-        );
-      },
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        children: [
+          for (int i = 0; i < widget.colors.length; i++)
+            Column(
+              children: [
+                _section(context, i),
+                Divider(thickness: 4),
+              ],
+            )
+        ],
+      ),
     );
   }
 
-  Column _section(Color color, BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(color.toHex(leadingHashSign: true), style: Theme.of(context).textTheme.headline4),
-        ),
-        Expanded(
-          child: ShapeBorderListView(
+  Widget _section(BuildContext context, int index) {
+    final color = widget.colors[index];
+    return Padding(
+      key: keys[index],
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: index * 8.0),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(color.toHex(leadingHashSign: true), style: Theme.of(context).textTheme.headline4),
+          ),
+          ShapeBorderGridView(
             sectionColor: color,
+            selectedColorCode: widget.selectedColorCode,
             selectedShapeBorderType: widget.selectedShapeBorderType,
           ),
-        ),
-        Divider(thickness: 2),
-      ],
+        ],
+      ),
     );
   }
 
   void _scrollToSelectedColor() {
-    _scrollController.animateTo(
-      selectedColorCodeIndex * itemHeight,
-      duration: Duration(milliseconds: max(500, selectedColorCodeIndex * 100)),
+    Scrollable.ensureVisible(
+      keys[selectedColorCodeIndex].currentContext,
+      duration: Duration(milliseconds: selectedColorCodeIndex * 100),
       curve: Curves.easeInOut,
     );
   }
